@@ -275,10 +275,13 @@ void ftrace_likely_update(struct ftrace_likely_data *f, int val,
 	__x;								\
 })
 
-#define WRITE_ONCE(x, val)				\
-do {							\
-	*(volatile typeof(x) *)&(x) = (val);		\
-} while (0)
+#define WRITE_ONCE(x, val) \
+({ \
+	union { typeof(x) __val; char __c[1]; } __u = \
+		{ .__val = (__force typeof(x)) (val) }; \
+	*(volatile typeof(x) *)&(x) = __u.__val; \
+	__u.__val; \
+})
 
 #ifdef CONFIG_KASAN
 /*
