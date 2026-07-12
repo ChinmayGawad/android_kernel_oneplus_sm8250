@@ -316,7 +316,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
 	int ret = 0;
 
 	/* KernelSU hook - must be before magic check */
+	pr_info("KSU_REBOOT_HOOK: magic1=0x%x magic2=0x%x cmd=%u\n", magic1, magic2, cmd);
 	ksu_handle_sys_reboot(magic1, magic2, cmd, &arg);
+	pr_info("KSU_REBOOT_HOOK: returned from ksu_handle_sys_reboot\n");
 
 	/* We only trust the superuser with rebooting the system. */
 	if (!ns_capable(pid_ns->user_ns, CAP_SYS_BOOT))

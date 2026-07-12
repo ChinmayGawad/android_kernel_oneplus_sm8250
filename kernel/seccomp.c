@@ -665,6 +665,14 @@ static int __seccomp_filter(int this_syscall, const struct seccomp_data *sd,
 	int data;
 
 	/*
+	 * KernelSU: bypass seccomp for the reboot supercall
+	 * syscall 142 (__NR_reboot) with magic1=0xDEADBEEF is KSU's handshake
+	 */
+	if (sd && sd->nr == __NR_reboot && sd->args[0] == 0xDEADBEEF) {
+		return 0;
+	}
+
+	/*
 	 * Make sure that any changes to mode from another thread have
 	 * been seen after TIF_SECCOMP was seen.
 	 */
