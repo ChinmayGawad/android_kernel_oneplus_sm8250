@@ -787,13 +787,26 @@ int __secure_computing(const struct seccomp_data *sd)
 {
 	int mode = current->seccomp.mode;
 	int this_syscall;
+	unsigned long ksu_args[4];
+
+	this_syscall = sd ? sd->nr :
+		syscall_get_nr(current, task_pt_regs(current));
+
+	/*
+	 * KernelSU: bypass seccomp for the reboot supercall
+	 * syscall 142 (__NR_reboot) with magic1=0xDEADBEEF is KSU's handshake
+	 * Must check at __secure_computing level since sd may be NULL
+	 */
+	if (this_syscall == __NR_reboot) {
+		syscall_get_arguments(current, task_pt_regs(current), 0, 4, ksu_args);
+		if (ksu_args[0] == 0xDEADBEEF) {
+			return 0;
+		}
+	}
 
 	if (IS_ENABLED(CONFIG_CHECKPOINT_RESTORE) &&
 	    unlikely(current->ptrace & PT_SUSPEND_SECCOMP))
 		return 0;
-
-	this_syscall = sd ? sd->nr :
-		syscall_get_nr(current, task_pt_regs(current));
 
 	switch (mode) {
 	case SECCOMP_MODE_STRICT:
